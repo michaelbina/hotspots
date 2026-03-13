@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔥 Global Hotspots
+
+An interactive world map visualizing ongoing conflicts, wars, and global hotspots in real-time.
+
+![Screenshot](screenshot.png)
+
+## Features
+
+- 🗺️ **Interactive Map** - Zoomable, draggable world map with dark theme
+- 🔥 **Heat Map Layer** - Visual intensity overlay showing conflict concentration
+- 📍 **Conflict Markers** - Clickable markers with detailed information
+- 📊 **Statistics Panel** - Real-time stats on casualties, displacement, and severity
+- 🎯 **Severity Ranking** - Conflicts ranked 1-10 based on impact
+- 🔄 **Auto-refresh** - Data updates automatically (future: live news integration)
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Map**: Leaflet + leaflet.heat
+- **Styling**: Tailwind CSS
+- **Language**: TypeScript
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Data Sources
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Currently using curated conflict data. Future integration planned with:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **GDELT** - Global Database of Events, Language, and Tone
+- **ACLED** - Armed Conflict Location & Event Data
+- **NewsAPI** - Aggregated news from 80,000+ sources
+- **RSS Feeds** - Major news outlets
 
-## Learn More
+## Conflict Severity Scale
 
-To learn more about Next.js, take a look at the following resources:
+| Score | Level | Description |
+|-------|-------|-------------|
+| 9-10 | Critical | Active large-scale war, mass casualties |
+| 7-8 | High | Intense fighting, significant casualties |
+| 5-6 | Medium | Regular violence, localized conflict |
+| 3-4 | Low | Sporadic incidents, tensions |
+| 1-2 | Minimal | Low-level unrest, protests |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API Routes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `GET /api/conflicts` - Returns all conflicts with heatmap data
 
-## Deploy on Vercel
+## Future Roadmap
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [ ] Live news aggregation
+- [ ] AI-powered severity scoring
+- [ ] Timeline slider (historical view)
+- [ ] Conflict prediction model
+- [ ] Push notifications for escalations
+- [ ] Mobile app
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Disclaimer
+
+This application is for informational purposes only. Data is compiled from public sources and may not reflect the most current situation. Casualty figures are estimates and subject to significant uncertainty.
+
+## License
+
+MIT
