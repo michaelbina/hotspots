@@ -129,9 +129,9 @@ export default function WW3Gauge({ assessment }: WW3GaugeProps) {
                   <div 
                     key={item.level}
                     className={`flex items-center gap-3 p-2 rounded-lg ${
-                      assessment.level === item.level ? 'bg-gray-800 ring-1' : ''
+                      assessment.level === item.level ? 'bg-gray-800 ring-1 ring-current' : ''
                     }`}
-                    style={{ ringColor: assessment.level === item.level ? item.color : undefined }}
+                    style={{ color: assessment.level === item.level ? item.color : undefined }}
                   >
                     <div 
                       className="w-3 h-3 rounded-full flex-shrink-0"
