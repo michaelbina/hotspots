@@ -84,27 +84,28 @@ export async function fetchConflictNews(conflictId: string): Promise<ConflictNew
   };
 }
 
-// Fetch all conflict news in parallel
+// Fetch all conflict news sequentially with rate limiting
 export async function fetchAllConflictNews(): Promise<Map<string, ConflictNews>> {
   const conflictIds = Object.keys(LOCATION_MAPPINGS);
-  
-  // Batch requests to avoid rate limiting
-  const batchSize = 5;
   const results = new Map<string, ConflictNews>();
   
-  for (let i = 0; i < conflictIds.length; i += batchSize) {
-    const batch = conflictIds.slice(i, i + batchSize);
-    const batchResults = await Promise.all(
-      batch.map(id => fetchConflictNews(id))
-    );
-    
-    batchResults.forEach(result => {
+  // Fetch top 10 conflicts only to avoid rate limits
+  const priorityConflicts = [
+    'ukraine-russia', 'gaza-israel', 'sudan-civil-war', 'red-sea-houthi',
+    'myanmar-civil-war', 'drc-east', 'yemen-war', 'syria-ongoing', 
+    'hormuz-tensions', 'iran-israel-shadow'
+  ];
+  
+  const conflictsToFetch = priorityConflicts.filter(id => conflictIds.includes(id));
+  
+  for (const id of conflictsToFetch) {
+    try {
+      const result = await fetchConflictNews(id);
       results.set(result.conflictId, result);
-    });
-    
-    // Small delay between batches
-    if (i + batchSize < conflictIds.length) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Rate limit: wait 1 second between requests
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (error) {
+      console.error(`Error fetching news for ${id}:`, error);
     }
   }
   

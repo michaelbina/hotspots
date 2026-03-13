@@ -5,12 +5,12 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Global Hotspots - World Conflict Map',
-  description: 'Real-time visualization of global conflicts, wars, and hotspots around the world',
-  keywords: ['conflicts', 'wars', 'world map', 'hotspots', 'geopolitics'],
+  title: 'WW3 Watch - World War 3 Risk Monitor',
+  description: 'Real-time global conflict monitoring and World War 3 risk assessment. Track active wars, hotspots, and escalation risks worldwide.',
+  keywords: ['world war 3', 'ww3', 'conflicts', 'wars', 'world map', 'nuclear war', 'geopolitics', 'risk assessment'],
   openGraph: {
-    title: 'Global Hotspots - World Conflict Map',
-    description: 'Real-time visualization of global conflicts and hotspots',
+    title: 'WW3 Watch - Are We on the Brink?',
+    description: 'Real-time World War 3 risk index and global conflict tracker',
     type: 'website',
   },
 };

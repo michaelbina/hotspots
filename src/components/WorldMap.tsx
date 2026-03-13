@@ -74,17 +74,23 @@ export default function WorldMap({ conflicts, heatmapPoints, onConflictSelect }:
         
         // @ts-expect-error leaflet.heat extends L
         heatLayerRef.current = L.heatLayer(heatData, {
-          radius: 35,
-          blur: 25,
-          maxZoom: 10,
+          radius: 50,
+          blur: 30,
+          maxZoom: 12,
           max: 1.0,
+          minOpacity: 0.3,
           gradient: {
-            0.0: '#000000',
-            0.2: '#2b0000',
-            0.4: '#660000',
-            0.6: '#cc3300',
+            0.0: 'transparent',
+            0.1: '#1a0000',
+            0.2: '#330000',
+            0.3: '#4d0000',
+            0.4: '#800000',
+            0.5: '#b30000',
+            0.6: '#cc2200',
+            0.7: '#e64500',
             0.8: '#ff6600',
-            1.0: '#ff0000',
+            0.9: '#ff8533',
+            1.0: '#ffaa00',
           },
         }).addTo(mapInstanceRef.current!);
       }
@@ -104,16 +110,28 @@ export default function WorldMap({ conflicts, heatmapPoints, onConflictSelect }:
     conflicts.forEach(conflict => {
       const color = calculateSeverityColor(conflict.severity);
       
+      // Scale size based on severity (critical = larger)
+      const baseSize = 12 + (conflict.severity * 4); // 16px to 52px
+      const pulseSize = baseSize + 16;
+      const glowSize = baseSize * 2.5;
+      const pulseSpeed = 2 - (conflict.severity * 0.12); // faster pulse for higher severity
+      
       const icon = L.divIcon({
         className: 'custom-marker',
         html: `
-          <div class="relative">
-            <div class="absolute -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full animate-ping opacity-75" style="background-color: ${color}"></div>
-            <div class="absolute -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white" style="background-color: ${color}"></div>
+          <div class="conflict-marker" style="--pulse-speed: ${pulseSpeed}s; --marker-color: ${color};">
+            <!-- Outer glow -->
+            <div class="marker-glow" style="width: ${glowSize}px; height: ${glowSize}px; background: radial-gradient(circle, ${color}40 0%, transparent 70%);"></div>
+            <!-- Pulse ring -->
+            <div class="marker-pulse" style="width: ${pulseSize}px; height: ${pulseSize}px; border-color: ${color};"></div>
+            <!-- Inner solid circle -->
+            <div class="marker-core" style="width: ${baseSize}px; height: ${baseSize}px; background: radial-gradient(circle at 30% 30%, ${color}, ${color}99); box-shadow: 0 0 ${baseSize/2}px ${color}, 0 0 ${baseSize}px ${color}80;"></div>
+            <!-- Center highlight -->
+            <div class="marker-highlight" style="width: ${baseSize * 0.4}px; height: ${baseSize * 0.4}px;"></div>
           </div>
         `,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
+        iconSize: [glowSize, glowSize],
+        iconAnchor: [glowSize / 2, glowSize / 2],
       });
 
       const marker = L.marker([conflict.location.lat, conflict.location.lng], { icon })
@@ -178,25 +196,36 @@ export default function WorldMap({ conflicts, heatmapPoints, onConflictSelect }:
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-8 left-4 z-[1000] bg-gray-900/90 backdrop-blur rounded-lg p-3">
-        <h4 className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">Severity</h4>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-600"></div>
+      <div className="absolute bottom-8 left-4 z-[1000] bg-gray-900/90 backdrop-blur rounded-lg p-4">
+        <h4 className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">Severity Scale</h4>
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center justify-center w-10">
+              <div className="w-6 h-6 rounded-full bg-red-600 shadow-lg shadow-red-600/50 animate-pulse"></div>
+            </div>
             <span className="text-xs text-gray-300">Critical (9-10)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center justify-center w-10">
+              <div className="w-5 h-5 rounded-full bg-orange-500 shadow-lg shadow-orange-500/50"></div>
+            </div>
             <span className="text-xs text-gray-300">High (7-8)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center justify-center w-10">
+              <div className="w-4 h-4 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50"></div>
+            </div>
             <span className="text-xs text-gray-300">Medium (5-6)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+          <div className="flex items-center gap-3">
+            <div className="relative flex items-center justify-center w-10">
+              <div className="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/50"></div>
+            </div>
             <span className="text-xs text-gray-300">Low (1-4)</span>
           </div>
+        </div>
+        <div className="mt-3 pt-3 border-t border-gray-700">
+          <p className="text-xs text-gray-500 italic">Size = severity intensity</p>
         </div>
       </div>
 
@@ -215,6 +244,68 @@ export default function WorldMap({ conflicts, heatmapPoints, onConflictSelect }:
         .custom-marker {
           background: transparent !important;
           border: none !important;
+        }
+        
+        /* Conflict marker styles */
+        .conflict-marker {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .marker-glow {
+          position: absolute;
+          border-radius: 50%;
+          animation: glow-pulse var(--pulse-speed, 2s) ease-in-out infinite;
+        }
+        
+        .marker-pulse {
+          position: absolute;
+          border-radius: 50%;
+          border: 3px solid;
+          opacity: 0;
+          animation: ping var(--pulse-speed, 2s) cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        
+        .marker-core {
+          position: absolute;
+          border-radius: 50%;
+          border: 2px solid rgba(255, 255, 255, 0.8);
+          transition: transform 0.2s ease;
+        }
+        
+        .marker-highlight {
+          position: absolute;
+          border-radius: 50%;
+          background: radial-gradient(circle at center, rgba(255,255,255,0.9) 0%, transparent 70%);
+          transform: translate(-25%, -25%);
+        }
+        
+        .conflict-marker:hover .marker-core {
+          transform: scale(1.15);
+        }
+        
+        @keyframes ping {
+          0% {
+            transform: scale(0.8);
+            opacity: 0.8;
+          }
+          75%, 100% {
+            transform: scale(2);
+            opacity: 0;
+          }
+        }
+        
+        @keyframes glow-pulse {
+          0%, 100% {
+            opacity: 0.6;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.3;
+            transform: scale(1.1);
+          }
         }
       `}</style>
     </div>

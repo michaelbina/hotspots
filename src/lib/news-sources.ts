@@ -113,4 +113,7 @@ export const LOCATION_MAPPINGS: Record<string, string[]> = {
   'nigeria-banditry': ['nigeria', 'boko haram', 'iswap', 'lagos', 'abuja', 'bandit'],
   'taiwan-tensions': ['taiwan', 'taipei', 'china military', 'strait', 'pla'],
   'korea-tensions': ['north korea', 'pyongyang', 'kim jong', 'dmz', 'missile test'],
+  'red-sea-houthi': ['red sea', 'houthi', 'bab el-mandeb', 'shipping attack', 'cargo ship', 'tanker attack', 'aden gulf'],
+  'hormuz-tensions': ['strait of hormuz', 'hormuz', 'iran tanker', 'irgc navy', 'persian gulf', 'us navy iran'],
+  'iran-israel-shadow': ['iran israel', 'mossad', 'irgc', 'iranian proxy', 'tehran attack', 'natanz', 'nuclear iran'],
 };

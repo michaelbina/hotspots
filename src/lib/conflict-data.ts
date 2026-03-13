@@ -323,6 +323,40 @@ export const KNOWN_CONFLICTS: Conflict[] = [
     conflictType: 'border_dispute',
     actors: ['North Korea', 'South Korea', 'USA'],
   },
+  {
+    id: 'red-sea-houthi',
+    title: 'Red Sea Shipping Attacks',
+    description: 'Houthi drone and missile attacks on commercial shipping in the Red Sea and Bab el-Mandeb strait',
+    location: { name: 'Red Sea / Bab el-Mandeb', country: 'Yemen', lat: 13.5, lng: 42.5 },
+    severity: 8,
+    articles: [],
+    lastUpdated: new Date(),
+    startDate: new Date('2023-11-19'),
+    conflictType: 'military_operation',
+    actors: ['Houthis', 'US Navy', 'UK Royal Navy', 'Commercial Shipping'],
+  },
+  {
+    id: 'hormuz-tensions',
+    title: 'Strait of Hormuz Tensions',
+    description: 'Iranian naval provocations, tanker seizures, and US-Iran standoffs in critical oil chokepoint',
+    location: { name: 'Strait of Hormuz', country: 'Iran', lat: 26.5, lng: 56.5 },
+    severity: 6,
+    articles: [],
+    lastUpdated: new Date(),
+    conflictType: 'border_dispute',
+    actors: ['Iran', 'IRGC Navy', 'US 5th Fleet', 'Oil Tankers'],
+  },
+  {
+    id: 'iran-israel-shadow',
+    title: 'Iran-Israel Shadow War',
+    description: 'Covert operations, cyberattacks, and proxy conflicts between Iran and Israel across Middle East',
+    location: { name: 'Iran', country: 'Iran', lat: 32.5, lng: 53.0 },
+    severity: 7,
+    articles: [],
+    lastUpdated: new Date(),
+    conflictType: 'military_operation',
+    actors: ['Iran', 'Israel', 'Mossad', 'IRGC', 'Proxies'],
+  },
 ];
 
 // Spread conflicts across multiple points for more realistic heat map
@@ -330,25 +364,55 @@ export function generateHeatmapPoints(conflicts: Conflict[]): HeatmapPoint[] {
   const points: HeatmapPoint[] = [];
   
   conflicts.forEach(conflict => {
-    // Main point
+    const intensity = conflict.severity / 10;
+    
+    // Main point (hottest center)
     points.push({
       lat: conflict.location.lat,
       lng: conflict.location.lng,
-      intensity: conflict.severity / 10,
+      intensity: intensity,
     });
     
-    // Add surrounding points for larger conflicts
-    if (conflict.severity >= 7) {
-      const spread = conflict.severity >= 9 ? 3 : 1.5;
-      const numPoints = conflict.severity >= 9 ? 12 : 6;
+    // Inner ring - high intensity
+    const innerPoints = Math.floor(4 + conflict.severity);
+    const innerSpread = 0.5 + (conflict.severity * 0.2);
+    for (let i = 0; i < innerPoints; i++) {
+      const angle = (2 * Math.PI * i) / innerPoints + Math.random() * 0.3;
+      const distance = innerSpread * (0.6 + Math.random() * 0.4);
+      points.push({
+        lat: conflict.location.lat + distance * Math.sin(angle),
+        lng: conflict.location.lng + distance * Math.cos(angle),
+        intensity: intensity * (0.7 + Math.random() * 0.2),
+      });
+    }
+    
+    // Add larger spread for severe conflicts (creates bigger "burn" area)
+    if (conflict.severity >= 6) {
+      const outerSpread = conflict.severity >= 9 ? 4 : conflict.severity >= 7 ? 2.5 : 1.5;
+      const outerPoints = conflict.severity >= 9 ? 20 : conflict.severity >= 7 ? 12 : 8;
       
-      for (let i = 0; i < numPoints; i++) {
-        const angle = (2 * Math.PI * i) / numPoints;
-        const distance = spread * (0.5 + Math.random() * 0.5);
+      for (let i = 0; i < outerPoints; i++) {
+        const angle = (2 * Math.PI * i) / outerPoints + Math.random() * 0.5;
+        const distance = outerSpread * (0.5 + Math.random() * 0.5);
         points.push({
           lat: conflict.location.lat + distance * Math.sin(angle),
           lng: conflict.location.lng + distance * Math.cos(angle),
-          intensity: (conflict.severity / 10) * (0.5 + Math.random() * 0.3),
+          intensity: intensity * (0.3 + Math.random() * 0.3),
+        });
+      }
+    }
+    
+    // Extra outer halo for critical conflicts
+    if (conflict.severity >= 9) {
+      const haloSpread = 6;
+      const haloPoints = 16;
+      for (let i = 0; i < haloPoints; i++) {
+        const angle = (2 * Math.PI * i) / haloPoints + Math.random() * 0.3;
+        const distance = haloSpread * (0.7 + Math.random() * 0.3);
+        points.push({
+          lat: conflict.location.lat + distance * Math.sin(angle),
+          lng: conflict.location.lng + distance * Math.cos(angle),
+          intensity: intensity * (0.15 + Math.random() * 0.15),
         });
       }
     }

@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { Conflict, HeatmapPoint, Article } from '@/types';
 import ConflictPanel from '@/components/ConflictPanel';
 import NewsTicker from '@/components/NewsTicker';
+import WW3Gauge from '@/components/WW3Gauge';
+import { calculateWW3Risk, WW3Assessment } from '@/lib/ww3-calculator';
 
 // Dynamic import to avoid SSR issues with Leaflet
 const WorldMap = dynamic(() => import('@/components/WorldMap'), {
@@ -44,8 +46,11 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [dataSource, setDataSource] = useState<string>('');
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [ww3Assessment, setWw3Assessment] = useState<WW3Assessment | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (showRefreshing = false) => {
+    if (showRefreshing) setIsRefreshing(true);
     try {
       const response = await fetch('/api/conflicts');
       const data: ApiResponse = await response.json();
@@ -71,10 +76,16 @@ export default function Home() {
       setHeadlines(parsedHeadlines);
       setLastUpdated(new Date(data.meta.lastUpdated));
       setDataSource(data.meta.dataSource);
+      
+      // Calculate WW3 risk
+      const assessment = calculateWW3Risk(parsedConflicts);
+      setWw3Assessment(assessment);
       setIsLoading(false);
+      setIsRefreshing(false);
     } catch (error) {
       console.error('Error fetching data:', error);
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
@@ -112,6 +123,18 @@ export default function Home() {
             />
           )}
           
+          {/* Loading Overlay */}
+          {isLoading && (
+            <div className="absolute inset-0 bg-gray-950 flex items-center justify-center z-[2000]">
+              <div className="text-center">
+                <div className="text-6xl mb-4">☢️</div>
+                <div className="w-20 h-20 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+                <h2 className="text-2xl font-bold text-white mb-2">WORLD WAR 3 WATCH</h2>
+                <p className="text-gray-400 text-sm">Analyzing global conflict data...</p>
+              </div>
+            </div>
+          )}
+          
           {/* Toggle Panel Button */}
           <button
             onClick={() => setPanelOpen(!panelOpen)}
@@ -122,16 +145,32 @@ export default function Home() {
 
           {/* Title Overlay */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] text-center pointer-events-none">
-            <h1 className="text-3xl font-black text-white drop-shadow-lg tracking-tight">
-              🌍 WORLD CONFLICT MAP
+            <h1 className="text-4xl font-black text-white drop-shadow-lg tracking-tight">
+              ☢️ WORLD WAR 3 WATCH
             </h1>
-            <p className="text-sm text-gray-300 drop-shadow">
-              {conflicts.length} active conflicts • {conflicts.filter(c => c.severity >= 9).length} critical
+            <p className="text-sm text-gray-300 drop-shadow mt-1">
+              {conflicts.length} active conflicts • {conflicts.filter(c => c.severity >= 9).length} critical zones
             </p>
           </div>
+          
+          {/* WW3 Risk Gauge */}
+          {ww3Assessment && (
+            <div className="absolute top-20 left-4 z-[1000]">
+              <WW3Gauge assessment={ww3Assessment} />
+            </div>
+          )}
 
           {/* Status Bar */}
           <div className="absolute top-4 right-4 z-[1000] bg-gray-900/90 backdrop-blur rounded-lg px-3 py-2 text-xs text-gray-400 flex items-center gap-3">
+            {isRefreshing && (
+              <>
+                <div className="flex items-center gap-2 text-yellow-400">
+                  <div className="w-3 h-3 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Loading data...</span>
+                </div>
+                <span className="text-gray-600">|</span>
+              </>
+            )}
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-500' : 'bg-gray-500'}`}></span>
               <button
@@ -143,11 +182,11 @@ export default function Home() {
             </div>
             <span className="text-gray-600">|</span>
             <button
-              onClick={fetchData}
+              onClick={() => fetchData(true)}
               className="hover:text-white transition-colors"
-              disabled={isLoading}
+              disabled={isRefreshing}
             >
-              {isLoading ? 'Refreshing...' : '↻ Refresh'}
+              {isRefreshing ? 'Loading...' : '↻ Refresh'}
             </button>
             {lastUpdated && (
               <>
