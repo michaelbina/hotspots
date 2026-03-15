@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { KNOWN_CONFLICTS, generateHeatmapPoints } from '@/lib/conflict-data';
 import { fetchAllConflictNews, fetchGlobalHeadlines } from '@/lib/news-fetcher';
+import { getConnectionLines } from '@/lib/conflict-connections';
 import { Conflict } from '@/types';
 
 export const revalidate = 300; // Revalidate every 5 minutes
@@ -39,6 +40,7 @@ export async function GET() {
     enrichedConflicts.sort((a, b) => b.severity - a.severity);
 
     const heatmapPoints = generateHeatmapPoints(enrichedConflicts);
+    const connections = getConnectionLines(enrichedConflicts);
 
     // Calculate summary stats
     const totalCasualties = enrichedConflicts.reduce((sum, c) => sum + (c.casualties || 0), 0);
@@ -47,6 +49,7 @@ export async function GET() {
     return NextResponse.json({
       conflicts: enrichedConflicts,
       heatmapPoints,
+      connections,
       headlines: globalHeadlines.slice(0, 20),
       meta: {
         totalConflicts: enrichedConflicts.length,
@@ -70,6 +73,7 @@ export async function GET() {
     return NextResponse.json({
       conflicts,
       heatmapPoints: generateHeatmapPoints(KNOWN_CONFLICTS),
+      connections: getConnectionLines(conflicts as Conflict[]),
       headlines: [],
       meta: {
         totalConflicts: conflicts.length,

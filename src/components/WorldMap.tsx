@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Conflict, HeatmapPoint } from '@/types';
 import { calculateSeverityColor, formatCasualties, getConflictTypeLabel } from '@/lib/conflict-data';
+import { ConnectionLine, getConnectionColor, getConnectionTypeLabel } from '@/lib/conflict-connections';
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
@@ -17,16 +18,19 @@ L.Icon.Default.mergeOptions({
 interface WorldMapProps {
   conflicts: Conflict[];
   heatmapPoints: HeatmapPoint[];
+  connections?: ConnectionLine[];
   onConflictSelect?: (conflict: Conflict) => void;
 }
 
-export default function WorldMap({ conflicts, heatmapPoints, onConflictSelect }: WorldMapProps) {
+export default function WorldMap({ conflicts, heatmapPoints, connections = [], onConflictSelect }: WorldMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const heatLayerRef = useRef<L.Layer | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const connectionsLayerRef = useRef<L.LayerGroup | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showMarkers, setShowMarkers] = useState(true);
+  const [showConnections, setShowConnections] = useState(true);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -50,6 +54,7 @@ export default function WorldMap({ conflicts, heatmapPoints, onConflictSelect }:
 
     mapInstanceRef.current = map;
     markersLayerRef.current = L.layerGroup().addTo(map);
+    connectionsLayerRef.current = L.layerGroup().addTo(map);
 
     return () => {
       map.remove();
@@ -169,6 +174,58 @@ export default function WorldMap({ conflicts, heatmapPoints, onConflictSelect }:
     });
   }, [conflicts, showMarkers, onConflictSelect]);
 
+  // Update connection lines
+  useEffect(() => {
+    if (!mapInstanceRef.current || !connectionsLayerRef.current) return;
+
+    connectionsLayerRef.current.clearLayers();
+
+    if (!showConnections || connections.length === 0) return;
+
+    connections.forEach(({ sourceConflict, targetConflict, connection }) => {
+      const color = getConnectionColor(connection.type);
+      // Weight: strength 1-10 maps to 1-5px (stronger = thicker)
+      const weight = Math.max(1, connection.strength / 2);
+      // Opacity: stronger connections are more visible
+      const opacity = 0.4 + (connection.strength * 0.06);
+
+      const latlngs: L.LatLngExpression[] = [
+        [sourceConflict.location.lat, sourceConflict.location.lng],
+        [targetConflict.location.lat, targetConflict.location.lng],
+      ];
+
+      const polyline = L.polyline(latlngs, {
+        color,
+        weight,
+        opacity,
+        dashArray: connection.type === 'ideological' ? '5, 10' : undefined,
+        className: 'conflict-connection',
+      }).addTo(connectionsLayerRef.current!);
+
+      // Popup showing connection info
+      const popupContent = `
+        <div class="min-w-[200px] p-2">
+          <div class="text-xs text-gray-400 uppercase tracking-wider mb-1">${getConnectionTypeLabel(connection.type)}</div>
+          <h4 class="font-semibold text-sm mb-2">
+            ${sourceConflict.title} ↔ ${targetConflict.title}
+          </h4>
+          <p class="text-sm text-gray-300">${connection.description}</p>
+          <div class="mt-2 flex items-center gap-2">
+            <div class="h-2 flex-1 bg-gray-700 rounded-full overflow-hidden">
+              <div class="h-full rounded-full" style="width: ${connection.strength * 10}%; background-color: ${color};"></div>
+            </div>
+            <span class="text-xs text-gray-400">${connection.strength}/10</span>
+          </div>
+        </div>
+      `;
+
+      polyline.bindPopup(popupContent, {
+        className: 'dark-popup',
+        maxWidth: 300,
+      });
+    });
+  }, [connections, showConnections]);
+
   return (
     <div className="relative w-full h-full">
       <div ref={mapRef} className="w-full h-full" />
@@ -192,6 +249,15 @@ export default function WorldMap({ conflicts, heatmapPoints, onConflictSelect }:
             className="rounded"
           />
           Markers
+        </label>
+        <label className="flex items-center gap-2 text-sm text-white cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showConnections}
+            onChange={(e) => setShowConnections(e.target.checked)}
+            className="rounded"
+          />
+          Connections
         </label>
       </div>
 
@@ -227,6 +293,46 @@ export default function WorldMap({ conflicts, heatmapPoints, onConflictSelect }:
         <div className="mt-3 pt-3 border-t border-gray-700">
           <p className="text-xs text-gray-500 italic">Size = severity intensity</p>
         </div>
+
+        {/* Connection Types Legend */}
+        {showConnections && (
+          <>
+            <h4 className="text-xs font-semibold text-gray-400 mt-4 mb-3 uppercase tracking-wider">Connection Types</h4>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-1 rounded-full bg-red-500"></div>
+                <span className="text-xs text-gray-300">Direct</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-1 rounded-full bg-orange-500"></div>
+                <span className="text-xs text-gray-300">Proxy</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-1 rounded-full bg-blue-500"></div>
+                <span className="text-xs text-gray-300">Alliance</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-1 rounded-full bg-purple-500"></div>
+                <span className="text-xs text-gray-300">Arms</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-1 rounded-full bg-pink-500"></div>
+                <span className="text-xs text-gray-300">Shared Actor</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-1 rounded-full bg-green-500"></div>
+                <span className="text-xs text-gray-300">Regional</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-0.5 rounded-full bg-yellow-500" style={{ borderTop: '2px dashed #eab308' }}></div>
+                <span className="text-xs text-gray-300">Ideological</span>
+              </div>
+            </div>
+            <div className="mt-2 pt-2 border-t border-gray-700">
+              <p className="text-xs text-gray-500 italic">Thickness = connection strength</p>
+            </div>
+          </>
+        )}
       </div>
 
       <style jsx global>{`

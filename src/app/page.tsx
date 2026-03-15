@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Conflict, HeatmapPoint, Article } from '@/types';
+import { ConnectionLine } from '@/lib/conflict-connections';
 import ConflictPanel from '@/components/ConflictPanel';
 import NewsTicker from '@/components/NewsTicker';
 import WW3Gauge from '@/components/WW3Gauge';
@@ -24,6 +25,7 @@ const WorldMap = dynamic(() => import('@/components/WorldMap'), {
 interface ApiResponse {
   conflicts: Conflict[];
   heatmapPoints: HeatmapPoint[];
+  connections: ConnectionLine[];
   headlines: Article[];
   meta: {
     totalConflicts: number;
@@ -39,6 +41,7 @@ interface ApiResponse {
 export default function Home() {
   const [conflicts, setConflicts] = useState<Conflict[]>([]);
   const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
+  const [connections, setConnections] = useState<ConnectionLine[]>([]);
   const [headlines, setHeadlines] = useState<Article[]>([]);
   const [selectedConflict, setSelectedConflict] = useState<Conflict | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -73,6 +76,7 @@ export default function Home() {
       
       setConflicts(parsedConflicts);
       setHeatmapPoints(data.heatmapPoints);
+      setConnections(data.connections);
       setHeadlines(parsedHeadlines);
       setLastUpdated(new Date(data.meta.lastUpdated));
       setDataSource(data.meta.dataSource);
@@ -119,6 +123,7 @@ export default function Home() {
             <WorldMap
               conflicts={conflicts}
               heatmapPoints={heatmapPoints}
+              connections={connections}
               onConflictSelect={handleConflictSelect}
             />
           )}
